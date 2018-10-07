@@ -2,13 +2,12 @@
 
 #include <omp.h>
 #include <iostream>
-
-// ¬ј–»јЌ“ 3. ƒана последовательность натуральных чисел { a0, Е, anЦ1 }. —оздать
-// OpenMP - приложение дл€ вычислени€ общей суммы и всех промежуточных
-// сумм простых чисел последовательности.
-
 #include <vector>
 #include <algorithm>
+
+// Variant 3: For the given sequence of natural numbers {a0, Е, anЦ1}, create
+// OpenMP application for computing total sum and all running totals
+// of the prime numbers of this sequence.
 
 ///
 /// Sequential Algorithms
