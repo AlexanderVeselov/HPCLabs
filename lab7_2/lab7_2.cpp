@@ -41,12 +41,12 @@ public:
         return size;
     }
 
-    T& Get(std::size_t row, std::size_t column)
+    T& Element(std::size_t row, std::size_t column)
     {
         return data_[row * size + column];
     }
 
-    T const& Get(std::size_t row, std::size_t column) const
+    T const& Element(std::size_t row, std::size_t column) const
     {
         return data_[row * size + column];
     }
@@ -70,7 +70,7 @@ public:
                     continue;
                 }
 
-                cofactor.Get(dst_row, dst_column) = Get(src_row, src_column);
+                cofactor.Element(dst_row, dst_column) = Element(src_row, src_column);
 
                 ++dst_column;
             }
@@ -107,7 +107,7 @@ int main(int argc, char** argv)
     {
         for (int j = 0; j < 3; ++j)
         {
-            matrix.Get(i, j) = rand();
+            matrix.Element(i, j) = rand();
         }
     }
 
