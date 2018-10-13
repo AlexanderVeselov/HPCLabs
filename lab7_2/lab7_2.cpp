@@ -66,37 +66,31 @@ public:
         return data_[row * size_ + column];
     }
 
-    Matrix<T> GetCofactor(std::size_t row, std::size_t column) const
+    Matrix<T> GetMinorSubmatrix(std::size_t row, std::size_t column) const
     {
-        Matrix<T> cofactor(size_ - 1);
-        std::size_t dst_row = 0;
-        for (std::size_t src_row = 0; src_row < size_; ++src_row)
+        std::size_t submatrix_size = size_ - 1;
+        Matrix<T> submatrix(submatrix_size);
+        std::size_t j = 0;
+        for (std::size_t i = 0; i < size_ * size_; ++i)
         {
-            if (src_row == row)
+            if (i / size_ == row)
             {
+                i += submatrix_size;
                 continue;
             }
 
-            std::size_t dst_column = 0;
-            for (std::size_t src_column = 0; src_column < size_; ++src_column)
+            if (i % size_ == column)
             {
-                if (src_column == column)
-                {
-                    continue;
-                }
-
-                cofactor.Element(dst_row, dst_column) = Element(src_row, src_column);
-
-                ++dst_column;
+                continue;
             }
-
-            ++dst_row;
+            submatrix[j] = data_[i];
+            ++j;
         }
 
-        return cofactor;
+        return submatrix;
     }
 
-    Matrix<T> GetInner() const
+    Matrix<T> GetInnerSubmatrix() const
     {
         Matrix<T> inner(size_ - 2);
         for (std::size_t i = 1; i < size_ - 1; ++i)
@@ -122,7 +116,7 @@ public:
 #pragma omp parallel for reduction (+:result)
         for (int i = 0; i < GetSize(); ++i)
         {
-            T value = Element(0, i) * GetCofactor(0, i).Determinant();
+            T value = Element(0, i) * GetMinorSubmatrix(0, i).Determinant();
             result += (i % 2) ? -value : value;
         }
 
@@ -160,7 +154,7 @@ int main(int argc, char** argv)
     {
         for (int j = 0; j < matrix.GetSize(); ++j)
         {
-            matrix.Element(i, j) = (float)(std::rand() % 30000) + 1;
+            matrix.Element(i, j) = (float)(std::rand() % 30) + 1;
         }
     }
 
@@ -187,7 +181,7 @@ int main(int argc, char** argv)
             }
             if (iter > 0)
             {
-                Matrix<float> inner = prevprev.GetInner();
+                Matrix<float> inner = prevprev.GetInnerSubmatrix();
                 //std::cout << current << std::endl;
                 //std::cout << inner << std::endl;
                 //std::cout << prev << std::endl;
