@@ -71,6 +71,7 @@ public:
         std::size_t submatrix_size = size_ - 1;
         Matrix<T> submatrix(submatrix_size);
         std::size_t j = 0;
+        // TODO: write without continue
         for (std::size_t i = 0; i < size_ * size_; ++i)
         {
             if (i / size_ == row)
@@ -93,12 +94,17 @@ public:
     Matrix<T> GetInnerSubmatrix() const
     {
         Matrix<T> inner(size_ - 2);
-        for (std::size_t i = 1; i < size_ - 1; ++i)
+        std::size_t j = 0;
+        for (std::size_t i = size_ + 1; i < size_ * (size_ - 1); ++i)
         {
-            for (std::size_t j = 1; j < size_ - 1; ++j)
+            if (i % size_ == size_ - 1)
             {
-                inner.Element(i - 1, j - 1) = Element(i, j);
+                i++;
+                continue;
             }
+
+            inner[j] = data_[i];
+            ++j;
         }
 
         return inner;
@@ -149,7 +155,7 @@ std::ostream& operator<<(std::ostream & os, Matrix<T> const& matrix)
 
 int main(int argc, char** argv)
 {
-    Matrix<float> matrix(5);
+    Matrix<float> matrix(10);
     for (int i = 0; i < matrix.GetSize(); ++i)
     {
         for (int j = 0; j < matrix.GetSize(); ++j)
@@ -159,6 +165,7 @@ int main(int argc, char** argv)
     }
 
     std::cout << matrix << std::endl;
+
     {
         PROFILE_TIME("determinant calculation");
         std::cout << matrix.Determinant() << std::endl;
