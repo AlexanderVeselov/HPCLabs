@@ -70,22 +70,16 @@ public:
     {
         std::size_t submatrix_size = size_ - 1;
         Matrix<T> submatrix(submatrix_size);
-        std::size_t j = 0;
-        // TODO: write without continue
-        for (std::size_t i = 0; i < size_ * size_; ++i)
-        {
-            if (i / size_ == row)
-            {
-                i += submatrix_size;
-                continue;
-            }
 
-            if (i % size_ == column)
-            {
-                continue;
-            }
-            submatrix[j] = data_[i];
-            ++j;
+        for (std::size_t i = 0; i < submatrix_size * submatrix_size; ++i)
+        {
+            std::size_t dst_x = i % submatrix_size;
+            std::size_t dst_y = i / submatrix_size;
+
+            std::size_t src_index = (dst_x >= column) + dst_y + (dst_y >= row) * size_ + i;
+
+            submatrix[i] = data_[src_index];
+
         }
 
         return submatrix;
@@ -93,18 +87,18 @@ public:
 
     Matrix<T> GetInnerSubmatrix() const
     {
-        Matrix<T> inner(size_ - 2);
-        std::size_t j = 0;
-        for (std::size_t i = size_ + 1; i < size_ * (size_ - 1); ++i)
-        {
-            if (i % size_ == size_ - 1)
-            {
-                i++;
-                continue;
-            }
+        std::size_t inner_size = size_ - 2;
+        Matrix<T> inner(inner_size);
 
-            inner[j] = data_[i];
-            ++j;
+        for (std::size_t i = 0; i < inner_size * inner_size; ++i)
+        {
+            std::size_t dst_x = i % inner_size;
+            std::size_t dst_y = i / inner_size;
+
+            std::size_t src_index = (dst_x + 1) + (dst_y + 1) * size_;
+
+            inner[i] = data_[src_index];
+
         }
 
         return inner;
@@ -155,12 +149,12 @@ std::ostream& operator<<(std::ostream & os, Matrix<T> const& matrix)
 
 int main(int argc, char** argv)
 {
-    Matrix<float> matrix(10);
+    Matrix<float> matrix(3);
     for (int i = 0; i < matrix.GetSize(); ++i)
     {
         for (int j = 0; j < matrix.GetSize(); ++j)
         {
-            matrix.Element(i, j) = (float)(std::rand() % 30) + 1;
+            matrix.Element(i, j) = (float)(std::rand() % 10);
         }
     }
 
@@ -171,42 +165,5 @@ int main(int argc, char** argv)
         std::cout << matrix.Determinant() << std::endl;
     }
 
-    {
-        PROFILE_TIME("condensation method");
-        Matrix<float> prevprev = matrix;
-        Matrix<float> prev = matrix;
-        for (int iter = 0; iter < matrix.GetSize() - 1; ++iter)
-        {
-            Matrix<float> current(prev.GetSize() - 1);
-            for (int i = 0; i < prev.GetSize() - 1; ++i)
-            {
-                for (int j = 0; j < prev.GetSize() - 1; ++j)
-                {
-                    current.Element(i, j) = prev.Element(i, j) * prev.Element(i + 1, j + 1)
-                        - prev.Element(i, j + 1) * prev.Element(i + 1, j);
-                }
-            }
-            if (iter > 0)
-            {
-                Matrix<float> inner = prevprev.GetInnerSubmatrix();
-                //std::cout << current << std::endl;
-                //std::cout << inner << std::endl;
-                //std::cout << prev << std::endl;
-                //std::cout << prevprev << std::endl;
-                for (int i = 0; i < inner.GetSize(); ++i)
-                {
-                    for (int j = 0; j < inner.GetSize(); ++j)
-                    {
-                        //std::cout << current.Element(i, j) << " by " << inner.Element(i, j) << std::endl;
-                        current.Element(i, j) /= inner.Element(i, j);
-
-                    }
-                }
-                prevprev = prev;
-            }
-            prev = current;
-        }
-        std::cout << prev << std::endl;
-    }
     return 0;
 }
