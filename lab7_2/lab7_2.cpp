@@ -71,7 +71,8 @@ public:
         std::size_t submatrix_size = size_ - 1;
         Matrix<T> submatrix(submatrix_size);
 
-        for (std::size_t i = 0; i < submatrix_size * submatrix_size; ++i)
+#pragma omp parallel for
+        for (int i = 0; i < submatrix_size * submatrix_size; ++i)
         {
             std::size_t dst_x = i % submatrix_size;
             std::size_t dst_y = i / submatrix_size;
@@ -123,6 +124,31 @@ public:
         return result;
     }
 
+    T Adjunction(std::size_t row, std::size_t column) const
+    {
+        int sign = (row + column) % 2 == 0 ? 1 : -1;
+        return sign * GetMinorSubmatrix(row, column).Determinant();
+    }
+
+    Matrix<T> AdjugateMatrix() const
+    {
+        Matrix<T> adjugate(size_);
+
+#pragma omp parallel for
+        for (int i = 0; i < size_ * size_; ++i)
+        {
+            std::size_t row = i % size_;
+            std::size_t column = i / size_;
+
+            adjugate[i] = Adjunction(row, column);
+
+        }
+
+        return adjugate;
+
+    }
+
+
 private:
     std::vector<T> data_;
     std::size_t size_;
@@ -149,7 +175,7 @@ std::ostream& operator<<(std::ostream & os, Matrix<T> const& matrix)
 
 int main(int argc, char** argv)
 {
-    Matrix<float> matrix(3);
+    Matrix<float> matrix(8);
     for (int i = 0; i < matrix.GetSize(); ++i)
     {
         for (int j = 0; j < matrix.GetSize(); ++j)
@@ -163,6 +189,11 @@ int main(int argc, char** argv)
     {
         PROFILE_TIME("determinant calculation");
         std::cout << matrix.Determinant() << std::endl;
+    }
+
+    {
+        PROFILE_TIME("adjugate calculation");
+        std::cout << matrix.AdjugateMatrix() << std::endl;
     }
 
     return 0;
