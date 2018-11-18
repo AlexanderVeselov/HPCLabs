@@ -201,9 +201,9 @@ void Bank::PrintTickets() const
 
 void Bank::SendMoney()
 {
-    std::vector<float> send_amounts;
-    std::vector<Currency> send_currencies;
-    std::vector<int> send_dst_bank_ids;
+    std::vector<float>       send_amounts;
+    std::vector<Currency>    send_currencies;
+    std::vector<int>         send_dst_bank_ids;
     std::vector<std::size_t> send_dst_account_ids;
 
     if (bank_id_ != kCentralBankId)
@@ -237,13 +237,9 @@ void Bank::SendMoney()
     if (bank_id_ == kCentralBankId)
     {
         total_tickets = std::accumulate(recv_counts.begin() + 1, recv_counts.end(), 0);
-        std::cout << "Recv counts " << total_tickets << std::endl;
-        for (int i = 0; i < recv_counts.size(); ++i)
-        {
-            std::cout << recv_counts[i] << std::endl;
-        }
     }
 
+    // Received data
     std::vector<float> recv_amounts;
     std::vector<Currency> recv_currencies;
     std::vector<int> recv_dst_bank_ids;
@@ -264,25 +260,11 @@ void Bank::SendMoney()
         recv_offsets[i] = recv_offsets[i - 1] + recv_counts[i - 1];
     }
 
-    if (bank_id_ == kCentralBankId)
-    {
-        std::cout << "Recv offsets " << recv_offsets.size() << std::endl;
-        for (int i = 0; i < recv_offsets.size(); ++i)
-        {
-            std::cout << recv_offsets[i] << std::endl;
-        }
-    }
+    MPI_Gatherv(send_amounts.data(), send_amounts.size(), MPI_FLOAT, recv_amounts.data(), recv_counts.data(), recv_offsets.data(), MPI_FLOAT, kCentralBankId, MPI_COMM_WORLD);
+    MPI_Gatherv(send_currencies.data(), send_currencies.size(), MPI_INT, recv_currencies.data(), recv_counts.data(), recv_offsets.data(), MPI_INT, kCentralBankId, MPI_COMM_WORLD);
+    MPI_Gatherv(send_dst_bank_ids.data(), send_dst_bank_ids.size(), MPI_INT, recv_dst_bank_ids.data(), recv_counts.data(), recv_offsets.data(), MPI_INT, kCentralBankId, MPI_COMM_WORLD);
+    MPI_Gatherv(send_dst_account_ids.data(), send_dst_account_ids.size(), MPI_UNSIGNED_LONG_LONG, recv_dst_account_ids.data(), recv_counts.data(), recv_offsets.data(), MPI_UNSIGNED_LONG_LONG, kCentralBankId, MPI_COMM_WORLD);
 
-    MPI_Gatherv(send_amounts.data(), send_amounts.size(), MPI_FLOAT, recv_amounts.data(), recv_counts.data(), recv_counts.data(), MPI_FLOAT, kCentralBankId, MPI_COMM_WORLD);
-
-    //if (bank_id_ == kCentralBankId)
-    //{
-    //    std::cout << "Send amounts " << recv_amounts.size() << std::endl;
-    //    for (int i = 0; i < recv_amounts.size(); ++i)
-    //    {
-    //        std::cout << recv_amounts[i] << std::endl;
-    //    }
-    //}
 
 
 }
