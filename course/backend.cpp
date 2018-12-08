@@ -29,28 +29,8 @@ int lg(uint32_t i) {
     return count;
 }
 
-// Russian peasant algorithm
-int pown(const int p) {
-    uint32_t w = p;
-    w |= w >> 1;
-    w |= w >> 2;
-    w |= w >> 4;
-    w |= w >> 8;
-    w |= w >> 16;
-    uint32_t mask = w & ~(w >> 1);
-
-    int a = 1;
-    while (mask) {
-        a = a * a;
-        if (mask & p)
-            a *= 2;
-        mask >>= 1;
-    }
-
-    return a;
-}
-
 // https://equilibriumofnothing.wordpress.com/2013/10/14/algorithm-iterative-fft/
+// Assume that arrays sizes are even power of two
 void iterativeFFT(std::vector<std::complex<double>> const& primal,
     std::vector<std::complex<double>> & dual, const int P) {
     const int N = primal.size();
