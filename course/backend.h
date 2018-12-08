@@ -4,7 +4,6 @@
 
 extern "C"
 {
-    void DLLEXPORT SendFunc(float* arr, int size);
-    void DLLEXPORT RecvFunc(float* x);
+    void DLLEXPORT fft(double* arr, int size, double* out_real, double* out_imag);
 
 }

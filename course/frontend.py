@@ -26,21 +26,17 @@ class Application(tk.Tk):
 
         self.InitPlot1()
 
-        #self.my_dll = ctypes.WinDLL("Debug/course.dll")
-
-        x = [1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9]
-        #self.SendFloatArray(x)
-        #self.RecvFloatArray()
+        self.my_dll = ctypes.WinDLL("Debug/course.dll")
 
     def LoadData(self):
         #self.data_filename = filedialog.askopenfilename(initialdir = "/",title = "Select file",filetypes = (("text", "*.txt"), ("all files", "*.*")))
         #print(self.data_filename)
         self.ax[0].clear()
-        self.Fs = 150.0  # sampling rate
+        self.Fs = 1024.0*2  # sampling rate
         Ts = 1.0/self.Fs # sampling interval
-        t = np.arange(0, 2, Ts) # time vector
+        t = np.arange(0, 1, Ts) # time vector
         ff = 5   # frequency of the signal
-        self.y = np.sin(2*np.pi*ff*t)
+        self.y = np.sin(2*np.pi*ff*t) + np.sin(2*np.pi*2 * ff*t) + np.random.random_sample(len(t))
         self.ax[0].plot(t, self.y)
         self.ax[0].set_xlabel('Time')
         self.ax[0].set_ylabel('Amplitude')
@@ -68,10 +64,19 @@ class Application(tk.Tk):
         frq = k/T # two sides frequency range
         frq = frq[range(int(n / 2))] # one side frequency range
 
-        Y = np.fft.fft(self.y)/n # fft computing and normalization
+        float_array_type = ctypes.c_double * n
+        # Asterisk '*' means unpacking container
+        in_data = float_array_type(*self.y)
+        # Pass zero lists as out parameters
+        out_real = float_array_type(*[0]*n)
+        out_imag = float_array_type(*[0]*n)
+        self.my_dll.fft(in_data, n, out_real, out_imag)
+
+        #Y = np.fft.fft(self.y)
+        Y = np.array(out_real) + 1j * np.array(out_imag)
         Y = Y[range(int(n / 2))]
 
-        self.ax[1].plot(frq, abs(Y),'r') # plotting the spectrum
+        self.ax[1].semilogx(frq, 2 * abs(Y) / n, 'r')
         self.ax[1].set_xlabel('Freq (Hz)')
         self.ax[1].set_ylabel('|Y(freq)|')
         self.canvas.draw()
