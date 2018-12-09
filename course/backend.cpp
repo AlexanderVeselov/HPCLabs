@@ -316,80 +316,34 @@ void fft_simd_aligned(double* arr, int size, double* out_real, double* out_imag)
 
 }
 
-int reverse(int N, int n)
-{
-  int j, p = 0;
-  for(j = 1; j <= log2(N); j++) {
-    if(n & (1 << ((int) log2(N) - j)))
-      p |= 1 << (j - 1);
-  }
-  return p;
-}
-
-void print_binary(int number)
-{
-    std::string s = std::bitset<32>(number).to_string();
-    printf("%s", s.c_str());
-}
-
-void fftUtils_reverseArray(aligned_vector<std::complex<double>> & array, int array_size)
-{
-    for(int i = 0; i < array_size / 2; i++)
-    {
-        int reversion_idx = reverse(array_size, i);
-
-        std::swap(array[i], array[reversion_idx]);
-    }
-
-    for(int i = 0; i < array_size / 2; i++)
-    {
-        int reversion_idx = reverse(array_size, i);
-        
-        printf("Swap");
-        printf(" ");
-        print_binary(i);
-        printf(" and ");
-        print_binary(reversion_idx);
-        printf("\n");
-    }
-}
-
-void fftOmp_initWtable(aligned_vector<std::complex<double>> & W, int number_of_samples)
-{
-    int i;
-    std::complex<double> I(0.0, 1.0);
-
-    W[0] = 1;
-    W[1] = std::exp(-2 * M_PI * I / (double)number_of_samples);
-
-    for(int i = 2; i < number_of_samples / 2; i++)
-    {
-        std::complex<double> power(i, 0);
-        W[i] = std::pow(W[1], power);
-    }
-}
-
 void fft_parallel_simd_aligned_impl(aligned_vector<std::complex<double>> const& input, aligned_vector<std::complex<double>> & output, const bool inverse)
 {
     const int array_size = input.size();
 
-    //output = input;
-    //fftUtils_reverseArray(output, array_size);
     for (int i = 0; i < array_size; i++)
     {
         output[i] = input[reverseBits(i) >> (32 - lg(array_size))];
     }
 
-    unsigned long n = 1, i;
+    unsigned long n = 1;
     unsigned long a = array_size / 2;
 
     aligned_vector<std::complex<double>> W(array_size / 2);
-    fftOmp_initWtable(W, array_size);
+    std::complex<double> I(0.0, 1.0);
+
+    W[0] = 1;
+    W[1] = std::exp(-2 * M_PI * I / (double)array_size);
+
+    for(int i = 2; i < array_size / 2; i++)
+    {
+        std::complex<double> power(i, 0);
+        W[i] = std::pow(W[1], power);
+    }
 
 //#pragma omp parallel for
     for(unsigned long j = 0; j < log2(array_size); j++)
     {
-        for(i = 0; i < array_size; i++)
+        for(int i = 0; i < array_size; i++)
         {
             if (!(i & n))
             {
@@ -404,14 +358,6 @@ void fft_parallel_simd_aligned_impl(aligned_vector<std::complex<double>> const& 
         n *= 2;
         a = a / 2;
     }
-
-    // if (inverse)
-    // {
-    //     for (int j = 0; j < array_size; j++)
-    //     {
-    //         output[j] /= array_size;
-    //     }
-    // }
 
 }
 
