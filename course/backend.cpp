@@ -7,6 +7,8 @@
 #include <algorithm>
 #include <omp.h>
 #include <mm_malloc.h>
+#include <bitset>
+#include <string>
 
 std::uint32_t reverseBits(std::uint32_t i) {
     std::uint32_t mask = 0x55555555; // 0101...
@@ -314,51 +316,102 @@ void fft_simd_aligned(double* arr, int size, double* out_real, double* out_imag)
 
 }
 
+int reverse(int N, int n)
+{
+  int j, p = 0;
+  for(j = 1; j <= log2(N); j++) {
+    if(n & (1 << ((int) log2(N) - j)))
+      p |= 1 << (j - 1);
+  }
+  return p;
+}
+
+void print_binary(int number)
+{
+    std::string s = std::bitset<32>(number).to_string();
+    printf("%s", s.c_str());
+}
+
+void fftUtils_reverseArray(aligned_vector<std::complex<double>> & array, int array_size)
+{
+    for(int i = 0; i < array_size / 2; i++)
+    {
+        int reversion_idx = reverse(array_size, i);
+
+        std::swap(array[i], array[reversion_idx]);
+    }
+
+    for(int i = 0; i < array_size / 2; i++)
+    {
+        int reversion_idx = reverse(array_size, i);
+        
+        printf("Swap");
+        printf(" ");
+        print_binary(i);
+        printf(" and ");
+        print_binary(reversion_idx);
+        printf("\n");
+    }
+}
+
+void fftOmp_initWtable(aligned_vector<std::complex<double>> & W, int number_of_samples)
+{
+    int i;
+    std::complex<double> I(0.0, 1.0);
+
+    W[0] = 1;
+    W[1] = std::exp(-2 * M_PI * I / (double)number_of_samples);
+
+    for(int i = 2; i < number_of_samples / 2; i++)
+    {
+        std::complex<double> power(i, 0);
+        W[i] = std::pow(W[1], power);
+    }
+}
+
 void fft_parallel_simd_aligned_impl(aligned_vector<std::complex<double>> const& input, aligned_vector<std::complex<double>> & output, const bool inverse)
 {
-    const int N = input.size();
-    const int absP = lg(N);
+    const int array_size = input.size();
 
-#pragma omp parallel for
-    for (int i = 0; i < N; i++)
+    //output = input;
+    //fftUtils_reverseArray(output, array_size);
+    for (int i = 0; i < array_size; i++)
     {
-        output[i] = input[reverseBits(i) >> (32 - absP)];
+        output[i] = input[reverseBits(i) >> (32 - lg(array_size))];
     }
+
+    unsigned long n = 1, i;
+    unsigned long a = array_size / 2;
+
+    aligned_vector<std::complex<double>> W(array_size / 2);
+    fftOmp_initWtable(W, array_size);
 
 //#pragma omp parallel for
-    for (int p = 1; p <= absP; p++)
+    for(unsigned long j = 0; j < log2(array_size); j++)
     {
-        const int unityStep = 0x1 << p;
-        printf("unityStep: %d\n", unityStep);
-
-        const double theta = (inverse ? -1 : 1) * 2 * M_PI / unityStep;
-        printf("theta: %f\n", theta);
-
-        const std::complex<double> unityRoot(cos(theta), sin(theta));
-
-        for (int offset = 0; offset < N; offset += unityStep)
+        for(i = 0; i < array_size; i++)
         {
-            std::complex<double> omega = 1;
-
-            for (int k = 0; k < unityStep / 2; k++)
+            if (!(i & n))
             {
-                const std::complex<double> u = output[offset + k];
+                std::complex<double> temp_first_component = output[i];
+                std::complex<double> temp_second_component = W[(i * a) % (n * a)] * output[i + n];
 
-                const std::complex<double> t = omega * output[offset + k + unityStep / 2];
-                omega *= unityRoot;
-                output[offset + k] = u + t;
-                output[offset + k + unityStep / 2] = u - t;
+                output[i] = temp_first_component + temp_second_component;
+                output[i + n] = temp_first_component - temp_second_component;
             }
         }
+
+        n *= 2;
+        a = a / 2;
     }
 
-    if (inverse)
-    {
-        for (int j = 0; j < N; j++)
-        {
-            output[j] /= N;
-        }
-    }
+    // if (inverse)
+    // {
+    //     for (int j = 0; j < array_size; j++)
+    //     {
+    //         output[j] /= array_size;
+    //     }
+    // }
 
 }
 
