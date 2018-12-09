@@ -21,43 +21,44 @@ class Application(tk.Tk):
 
         self.loadbutton = ttk.Button(self, text="Load Data", command=self.LoadData)
         self.loadbutton.pack()
+        
+        self.my_dll = ctypes.WinDLL("Debug/course.dll")
+
+        self.options = {
+            "1 thread, no vectorization": self.my_dll.fft,
+            "1 thread, vectorized": self.my_dll.fft_simd,
+            "1 thread, vectorized and data aligned": self.my_dll.fft_simd_aligned,
+            "Multi-threaded, vectorized and data aligned": self.my_dll.fft_parallel_simd_aligned,
+        }
+        self.optionvar = tk.StringVar(self)
+        self.optionvar.set(list(self.options.keys())[0])
+
+        self.popupMenu = ttk.OptionMenu(self, self.optionvar, list(self.options.keys())[0], *self.options.keys())
+        self.popupMenu.pack()
+
         self.processbutton = ttk.Button(self, text="Process", command=self.ProcessData)
         self.processbutton.pack()
 
         self.InitPlot1()
 
-        self.my_dll = ctypes.WinDLL("Debug/course.dll")
 
     def LoadData(self):
         #self.data_filename = filedialog.askopenfilename(initialdir = "/",title = "Select file",filetypes = (("text", "*.txt"), ("all files", "*.*")))
         #print(self.data_filename)
         self.ax[0].clear()
-        self.Fs = 1024.0*2  # sampling rate
+        self.Fs = 128.0 #2097152.0  # sampling rate
         Ts = 1.0/self.Fs # sampling interval
-        t = np.arange(0, 1, Ts) # time vector
+        t = np.arange(0, 2, Ts) # time vector
         ff = 5   # frequency of the signal
-        self.y = np.sin(2*np.pi*ff*t) + np.sin(2*np.pi*2 * ff*t) + np.random.random_sample(len(t))
+        self.y = np.sin(2*np.pi*ff*t) + np.sin(2*np.pi*2 * ff*t)# + np.random.random_sample(len(t))
         self.ax[0].plot(t, self.y)
         self.ax[0].set_xlabel('Time')
         self.ax[0].set_ylabel('Amplitude')
 
         self.canvas.draw()
 
-    def SendFloatArray(self, arr):
-        float_array_type = ctypes.c_float * len(arr)
-        float_array = float_array_type(*arr)
-        self.my_dll.SendFunc(float_array, len(arr))
-
-    def RecvFloatArray(self):
-        arr = np.arange(0, 100)
-        float_array_type = ctypes.c_float * len(arr)
-        float_array = float_array_type(*arr)
-        self.my_dll.RecvFunc(float_array)
-        print(list(float_array))
-
     def ProcessData(self):
         self.ax[1].clear()
-
         n = len(self.y) # length of the signal
         k = np.arange(n)
         T = n/self.Fs
@@ -70,7 +71,7 @@ class Application(tk.Tk):
         # Pass zero lists as out parameters
         out_real = float_array_type(*[0]*n)
         out_imag = float_array_type(*[0]*n)
-        self.my_dll.fft(in_data, n, out_real, out_imag)
+        self.options[self.optionvar.get()](in_data, n, out_real, out_imag)
 
         #Y = np.fft.fft(self.y)
         Y = np.array(out_real) + 1j * np.array(out_imag)
