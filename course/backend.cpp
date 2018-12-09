@@ -1,4 +1,5 @@
 #include "backend.h"
+#include "../utils/time_profiler.hpp"
 #define _USE_MATH_DEFINES
 #include <cmath>
 #include <stdio.h>
@@ -35,20 +36,21 @@ int lg(std::uint32_t i) {
 
 // https://equilibriumofnothing.wordpress.com/2013/10/14/algorithm-iterative-fft/
 // Assume that arrays sizes are even power of two
+__attribute__((optimize("no-tree-vectorize")))
 void fft_impl(std::vector<std::complex<double>> const& input, std::vector<std::complex<double>> & output, const bool inverse)
 {
+    PROFILE_TIME(__FUNCTION__);
+    
     const int N = input.size();
     const int absP = lg(N);
 
     // bottom level of iteration tree
-#pragma loop(no_vector)
     for (int i = 0; i < N; i++)
     {
         output[i] = input[reverseBits(i) >> (32 - absP)];
     }
 
     // there are absP levels above the bottom
-#pragma loop(no_vector)
     for (int p = 1; p <= absP; p++)
     {
         // complex root of unity
@@ -57,13 +59,11 @@ void fft_impl(std::vector<std::complex<double>> const& input, std::vector<std::c
         const std::complex<double> unityRoot(cos(theta), sin(theta));
 
         // each higher level doubles the step size
-#pragma loop(no_vector)
         for (int offset = 0; offset < N; offset += unityStep)
         {
             std::complex<double> omega = 1;
 
             // combine within a step segment (note only iterate over half step)
-#pragma loop(no_vector)
             for (int k = 0; k < unityStep / 2; k++)
             {
                 const std::complex<double> u = output[offset + k];
@@ -79,7 +79,6 @@ void fft_impl(std::vector<std::complex<double>> const& input, std::vector<std::c
 
     if (inverse)
     {
-#pragma loop(no_vector)
         for (int j = 0; j < N; j++)
         {
             output[j] /= N;
@@ -111,6 +110,8 @@ void fft(double* arr, int size, double* out_real, double* out_imag)
 
 void fft_simd_impl(std::vector<std::complex<double>> const& input, std::vector<std::complex<double>> & output, const bool inverse)
 {
+    PROFILE_TIME(__FUNCTION__);
+
     const int N = input.size();
     const int absP = lg(N);
 
@@ -253,6 +254,8 @@ using aligned_vector = std::vector<T>;
 
 void fft_simd_aligned_impl(aligned_vector<std::complex<double>> const& input, aligned_vector<std::complex<double>> & output, const bool inverse)
 {
+    PROFILE_TIME(__FUNCTION__);
+
     const int N = input.size();
     const int absP = lg(N);
 
@@ -318,8 +321,10 @@ void fft_simd_aligned(double* arr, int size, double* out_real, double* out_imag)
 
 void fft_parallel_simd_aligned_impl(aligned_vector<std::complex<double>> const& input, aligned_vector<std::complex<double>> & output, const bool inverse)
 {
+    PROFILE_TIME(__FUNCTION__);
     const int array_size = input.size();
 
+#pragma omp parallel for
     for (int i = 0; i < array_size; i++)
     {
         output[i] = input[reverseBits(i) >> (32 - lg(array_size))];
@@ -334,15 +339,16 @@ void fft_parallel_simd_aligned_impl(aligned_vector<std::complex<double>> const& 
     W[0] = 1;
     W[1] = std::exp(-2 * M_PI * I / (double)array_size);
 
+#pragma omp parallel for
     for(int i = 2; i < array_size / 2; i++)
     {
         std::complex<double> power(i, 0);
         W[i] = std::pow(W[1], power);
     }
 
-//#pragma omp parallel for
     for(unsigned long j = 0; j < log2(array_size); j++)
     {
+#pragma omp parallel for
         for(int i = 0; i < array_size; i++)
         {
             if (!(i & n))

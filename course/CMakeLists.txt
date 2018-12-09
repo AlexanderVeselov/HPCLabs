@@ -5,3 +5,4 @@ set(SOURCES
 
 add_library(course SHARED ${SOURCES})
 target_link_libraries(course PRIVATE OpenMP::OpenMP_CXX)
+set(CMAKE_CXX_FLAGS "-O3")

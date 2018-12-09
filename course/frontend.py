@@ -2,7 +2,9 @@
 
 import matplotlib
 from matplotlib import pyplot
- 
+
+import time
+
 matplotlib.use('TkAgg')
  
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -45,12 +47,10 @@ class Application(tk.Tk):
 
 
     def LoadData(self):
-        #self.data_filename = filedialog.askopenfilename(initialdir = "/",title = "Select file",filetypes = (("text", "*.txt"), ("all files", "*.*")))
-        #print(self.data_filename)
         self.ax[0].clear()
-        self.Fs = 128.0 #2097152.0  # sampling rate
+        self.Fs = 2097152.0  # sampling rate
         Ts = 1.0/self.Fs # sampling interval
-        t = np.arange(0, 2, Ts) # time vector
+        t = np.arange(0, 4, Ts) # time vector
         ff = 5   # frequency of the signal
         self.y = np.sin(2*np.pi*ff*t) + np.sin(2*np.pi*2 * ff*t)# + np.random.random_sample(len(t))
         self.ax[0].plot(t, self.y)
