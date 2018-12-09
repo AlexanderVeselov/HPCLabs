@@ -1,6 +1,6 @@
 #pragma once
 
-#define DLLEXPORT __declspec(dllexport)
+#define DLLEXPORT// __declspec(dllexport)
 
 extern "C"
 {

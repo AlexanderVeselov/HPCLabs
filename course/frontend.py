@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 import matplotlib
 from matplotlib import pyplot
  
@@ -22,7 +24,7 @@ class Application(tk.Tk):
         self.loadbutton = ttk.Button(self, text="Load Data", command=self.LoadData)
         self.loadbutton.pack()
         
-        self.my_dll = ctypes.WinDLL("Debug/course.dll")
+        self.my_dll = ctypes.CDLL("../build/course/libcourse.so")
 
         self.options = {
             "1 thread, no vectorization": self.my_dll.fft,
