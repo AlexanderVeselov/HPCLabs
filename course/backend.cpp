@@ -36,7 +36,6 @@ int lg(std::uint32_t i) {
 
 // https://equilibriumofnothing.wordpress.com/2013/10/14/algorithm-iterative-fft/
 // Assume that arrays sizes are even power of two
-__attribute__((optimize("no-tree-vectorize")))
 void fft_impl(std::vector<std::complex<double>> const& input, std::vector<std::complex<double>> & output, const bool inverse)
 {
     PROFILE_TIME(__FUNCTION__);
@@ -207,7 +206,7 @@ public:
 
     inline pointer allocate(size_type n)
     {
-        return (pointer)_mm_malloc(N * sizeof(value_type), n);
+        return (pointer)_mm_malloc(n * sizeof(value_type), N);
     }
 
     inline void deallocate(pointer p, size_type)
@@ -250,7 +249,7 @@ public:
 };
 
 template <class T>
-using aligned_vector = std::vector<T>;
+using aligned_vector = std::vector<T, AlignmentAllocator<T>>;
 
 void fft_simd_aligned_impl(aligned_vector<std::complex<double>> const& input, aligned_vector<std::complex<double>> & output, const bool inverse)
 {

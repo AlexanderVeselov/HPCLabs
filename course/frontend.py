@@ -48,7 +48,7 @@ class Application(tk.Tk):
 
     def LoadData(self):
         self.ax[0].clear()
-        self.Fs = 2097152.0  # sampling rate
+        self.Fs = 262144.0 * 2#2097152.0  # sampling rate
         Ts = 1.0/self.Fs # sampling interval
         t = np.arange(0, 4, Ts) # time vector
         ff = 5   # frequency of the signal
